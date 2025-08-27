@@ -1,0 +1,604 @@
+<!--
+  Single-file, deploy-ready developer portfolio (HTML + Tailwind + Flowbite + Lottie)
+  - Bold block-based layout with split-screen hero
+  - Scroll-triggered fade-ins, hover + micro-interactions
+  - Project gallery with expandable case-study cards
+  - Mini-quiz skills game + chatbot contact widget
+  - Accessible (ARIA, keyboard navigation) and responsive
+  - Dark mode with animated toggle (not a color swap)
+  - Uses Tailwind CDN, Flowbite, and lottie-player (CDN)
+
+  How to use:
+  1. Save this file as `index.html`.
+  2. Deploy to Netlify/Vercel (drag-and-drop or push repo).
+  3. Replace placeholder images and Lottie URLs with your assets (WebP/AVIF recommended).
+
+  Notes:
+  - Comments in the code explain major sections & accessibility choices.
+  - To optimize for production, purge unused Tailwind classes or build with Tailwind CLI.
+-->
+
+<!doctype html>
+<html lang="en" class="antialiased">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Heretic — Developer Portfolio</title>
+  <meta name="description" content="Portfolio — modern, accessible, and playful developer portfolio built with Tailwind CSS and Flowbite" />
+
+  <!-- Tailwind CDN (for quick dev/demo). For production, generate a custom build. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Flowbite for a few components (optional) -->
+  <link rel="stylesheet" href="https://unpkg.com/flowbite@1.7.0/dist/flowbite.min.css" />
+  <script src="https://unpkg.com/flowbite@1.7.0/dist/flowbite.bundle.js"></script>
+  <!-- Lottie player -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+  <!-- Meta theme color for mobile browsers -->
+  <meta name="theme-color" content="#5B21B6" />
+
+  <style>
+    /* Small helpful utilities beyond Tailwind (keep minimal) */
+    :root{--accent:#7c3aed;--accent-2:#06b6d4}
+    /* Animated dark-mode transform for the toggle */
+    .toggle-knob { transition: transform 400ms cubic-bezier(.2,.9,.3,1); }
+
+    /* subtle 3D card shadow layering */
+    .card-depth { box-shadow: 0 6px 18px rgba(0,0,0,0.08), inset 0 -6px 12px rgba(255,255,255,0.02); }
+
+    /* Reduced motion preference respect */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-white via-sky-50 to-purple-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-700" data-theme="light">
+
+  <!-- Minimal sticky header with scroll anchors & CTA -->
+  <header class="fixed inset-x-0 top-0 z-40 backdrop-blur-sm bg-white/60 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
+      <a href="#home" class="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded" aria-label="Go to home">
+        <!-- Brand mark: simple svg -->
+        <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <rect width="48" height="48" rx="10" fill="url(#g)" />
+          <defs>
+            <linearGradient id="g" x1="0" x2="1">
+              <stop offset="0" stop-color="#7c3aed"/>
+              <stop offset="1" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="font-extrabold tracking-tight">Heretic</span>
+      </a>
+
+      <nav aria-label="Primary navigation" class="hidden md:flex items-center gap-6">
+        <a href="#projects" class="text-sm font-medium hover:underline focus:outline-none focus-visible:ring-2 rounded">Projects</a>
+        <a href="#story" class="text-sm font-medium hover:underline focus:outline-none focus-visible:ring-2 rounded">Story</a>
+        <a href="#skills" class="text-sm font-medium hover:underline focus:outline-none focus-visible:ring-2 rounded">Skills</a>
+        <a href="#contact" class="text-sm font-semibold bg-gradient-to-r from-violet-600 to-cyan-500 text-white px-3 py-2 rounded-lg shadow-sm hover:opacity-95 focus:outline-none focus-visible:ring-2">Contact</a>
+      </nav>
+
+      <!-- Mobile menu + dark toggle + sticky CTA -->
+      <div class="flex items-center gap-3">
+        <!-- Animated dark mode toggle -->
+        <button id="themeToggle" aria-pressed="false" aria-label="Toggle dark mode" class="w-14 h-8 bg-slate-100 dark:bg-slate-700 rounded-full p-1 flex items-center relative focus:outline-none focus-visible:ring-2">
+          <span id="toggleKnob" class="block w-6 h-6 bg-white rounded-full shadow-sm toggle-knob"></span>
+          <!-- subtle icon positions -->
+          <span class="sr-only">Toggle theme</span>
+        </button>
+
+        <a href="#contact" class="hidden md:inline-block text-sm font-semibold px-3 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-lg">Hire me</a>
+
+        <button id="mobileMenuBtn" class="md:hidden p-2 rounded focus:outline-none focus-visible:ring-2" aria-label="Open menu">
+          <!-- menu icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile drawer (simple) -->
+  <div id="mobileDrawer" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40" tabindex="-1" data-drawer-close></div>
+    <div class="absolute right-0 top-0 h-full w-72 bg-white dark:bg-slate-800 p-6 shadow-lg">
+      <button class="mb-4" data-drawer-close aria-label="Close menu">Close</button>
+      <nav class="flex flex-col gap-4">
+        <a href="#projects" class="py-2">Projects</a>
+        <a href="#story" class="py-2">Story</a>
+        <a href="#skills" class="py-2">Skills</a>
+        <a href="#contact" class="py-2">Contact</a>
+      </nav>
+    </div>
+  </div>
+
+  <main id="home" class="pt-20">
+
+    <!-- SPLIT-SCREEN HERO -->
+    <section class="min-h-screen grid grid-cols-1 md:grid-cols-12">
+
+      <!-- Left: Intro & CTA -->
+      <div class="md:col-span-7 flex items-center">
+        <div class="max-w-3xl px-6 py-24 md:py-32">
+          <!-- micro-animated headline -->
+          <span class="inline-block rounded-full px-3 py-1 text-xs font-semibold bg-gradient-to-r from-violet-100 to-cyan-100 text-violet-700 mb-6">Product-focused Web Developer</span>
+          <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-6 opacity-0 translate-y-6 will-change-transform" data-animate="fade-up">Hi, I'm <span class="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-cyan-400">Heretic</span><br class="hidden md:block"/> I build delightful web experiences.</h1>
+          <p class="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-8 opacity-0 translate-y-6" data-animate="fade-up" data-delay="80">I'm a web developer based in Durgapur specializing in accessible, high-performance frontends and delightful micro-interactions.</p>
+
+          <div class="flex gap-4 items-center opacity-0 translate-y-6" data-animate="fade-up" data-delay="160">
+            <a href="#projects" class="inline-flex items-center gap-3 px-5 py-3 rounded-lg font-semibold bg-gradient-to-r from-violet-600 to-cyan-500 text-white hover:scale-[1.02] transform transition shadow-lg focus:outline-none focus-visible:ring-2">View projects
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+
+            <button id="playCase" class="inline-flex items-center gap-3 px-4 py-3 rounded-lg font-medium bg-white/90 dark:bg-slate-700/80 text-slate-900 dark:text-slate-100 hover:translate-y-[-2px] transition focus:outline-none focus-visible:ring-2">Quick case study</button>
+          </div>
+
+          <!-- micro copy/story snippet -->
+          <div class="mt-8 text-sm text-slate-500 dark:text-slate-400 opacity-0 translate-y-6" data-animate="fade-up" data-delay="240">
+            <strong>Latest:</strong> shipped an accessibility-first dashboard with real-time sync for a local retailer—reduced stock-check time by 60%.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: avatar / illustration with parallax layers -->
+      <div class="md:col-span-5 relative flex items-center justify-center overflow-hidden">
+        <!-- layered blurred shapes for depth -->
+        <div class="absolute -left-24 top-10 w-80 h-80 rounded-3xl bg-gradient-to-tr from-violet-400 to-cyan-300 opacity-60 blur-3xl transform-gpu will-change-transform" data-parallax="-12"></div>
+        <div class="absolute right-8 bottom-6 w-64 h-64 rounded-2xl bg-gradient-to-bl from-rose-300 to-orange-300 opacity-70 blur-xl transform-gpu will-change-transform" data-parallax="8"></div>
+
+        <!-- Avatar: uses picture for AVIF/WebP fallbacks (optimize) -->
+        <picture class="relative z-10 p-6 rounded-3xl bg-white/80 dark:bg-slate-800/70 card-depth" aria-hidden>
+          <source srcset="/assets/avatar.avif" type="image/avif" />
+          <source srcset="/assets/avatar.webp" type="image/webp" />
+          <img src="/assets/avatar.jpg" alt="Portrait illustration of Heretic" class="w-72 h-72 object-cover rounded-2xl" loading="lazy"/>
+        </picture>
+
+        <!-- a subtle lottie loop for feel (replace src with your animation) -->
+        <lottie-player src="https://assets3.lottiefiles.com/packages/lf20_jtbfg2nb.json" background="transparent" speed="1" style="width:120px; position:absolute; bottom:18%; right:12%;" loop autoplay aria-hidden></lottie-player>
+
+      </div>
+    </section>
+
+    <!-- Projects gallery -->
+    <section id="projects" class="max-w-6xl mx-auto px-6 py-20">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-3xl font-extrabold">Selected Projects</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-300">Interactive case studies — click a card to expand.</p>
+        </div>
+        <div class="flex gap-2 items-center">
+          <label class="text-sm">Filter</label>
+          <select id="projectFilter" class="rounded p-2 bg-white/80 dark:bg-slate-800/80">
+            <option value="all">All</option>
+            <option value="web">Web Apps</option>
+            <option value="ui">UI/Design</option>
+            <option value="tools">Tools</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="projectGrid">
+
+        <!-- Project Card template (repeat as needed) -->
+        <article tabindex="0" class="project-card group relative rounded-2xl overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 card-depth transform transition hover:scale-[1.02] focus-within:scale-[1.02]" data-type="web">
+          <div class="p-5">
+            <h3 class="font-bold text-lg">Retail Sync Dashboard</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Real-time offline-first inventory app for two shops.</p>
+
+            <div class="mt-4 flex items-center gap-3">
+              <span class="inline-flex items-center gap-2 text-xs font-medium px-2 py-1 rounded bg-violet-100 text-violet-700">React</span>
+              <span class="inline-flex items-center gap-2 text-xs font-medium px-2 py-1 rounded bg-cyan-100 text-cyan-700">PouchDB</span>
+            </div>
+
+            <div class="mt-6 flex gap-3 items-center">
+              <button class="open-case inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-cyan-500 text-white font-semibold focus:outline-none focus-visible:ring-2">Open case</button>
+              <a href="#" class="text-sm text-slate-500 dark:text-slate-300 hover:underline">Live demo</a>
+            </div>
+          </div>
+
+          <!-- decorative tilt layer for depth -->
+          <div class="absolute inset-0 pointer-events-none" aria-hidden>
+            <svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 600 400"><defs><linearGradient id="g1"><stop offset="0" stop-color="#7c3aed" stop-opacity="0.06"/><stop offset="1" stop-color="#06b6d4" stop-opacity="0.02"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g1)"/></svg>
+          </div>
+        </article>
+
+        <!-- Second card -->
+        <article tabindex="0" class="project-card group relative rounded-2xl overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 card-depth transform transition hover:scale-[1.02] focus-within:scale-[1.02]" data-type="ui">
+          <div class="p-5">
+            <h3 class="font-bold text-lg">Design System Kit</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Atomic component library for accessible interfaces.</p>
+
+            <div class="mt-4 flex items-center gap-3">
+              <span class="inline-flex items-center gap-2 text-xs font-medium px-2 py-1 rounded bg-rose-100 text-rose-700">Figma</span>
+              <span class="inline-flex items-center gap-2 text-xs font-medium px-2 py-1 rounded bg-violet-100 text-violet-700">Tokens</span>
+            </div>
+
+            <div class="mt-6 flex gap-3 items-center">
+              <button class="open-case inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-cyan-500 text-white font-semibold focus:outline-none focus-visible:ring-2">Open case</button>
+              <a href="#" class="text-sm text-slate-500 dark:text-slate-300 hover:underline">View kit</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Third card -->
+        <article tabindex="0" class="project-card group relative rounded-2xl overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 card-depth transform transition hover:scale-[1.02] focus-within:scale-[1.02]" data-type="tools">
+          <div class="p-5">
+            <h3 class="font-bold text-lg">Interactive Code Playground</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Tiny web-based playground with instant previews & sharing.</p>
+
+            <div class="mt-4 flex items-center gap-3">
+              <span class="inline-flex items-center gap-2 text-xs font-medium px-2 py-1 rounded bg-amber-100 text-amber-700">VanillaJS</span>
+              <span class="inline-flex items-center gap-2 text-xs font-medium px-2 py-1 rounded bg-slate-100 text-slate-700">Vite</span>
+            </div>
+
+            <div class="mt-6 flex gap-3 items-center">
+              <button class="open-case inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-cyan-500 text-white font-semibold focus:outline-none focus-visible:ring-2">Open case</button>
+              <a href="#" class="text-sm text-slate-500 dark:text-slate-300 hover:underline">Source</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Project modal / expanded case study (hidden by default) -->
+      <div id="caseModal" class="fixed inset-0 hidden z-50 items-center justify-center p-6">
+        <div class="absolute inset-0 bg-black/50" data-close-modal></div>
+        <div class="relative max-w-4xl w-full bg-white dark:bg-slate-900 rounded-2xl overflow-auto max-h-[90vh] p-6 card-depth">
+          <button class="absolute top-4 right-4 p-2 rounded focus:outline-none" data-close-modal aria-label="Close case">✕</button>
+          <div id="caseContent"> <!-- JS will populate --> </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- STORY SECTION (personalized storytelling) -->
+    <section id="story" class="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 py-20">
+      <div class="max-w-4xl mx-auto px-6 prose dark:prose-invert">
+        <h2 class="text-3xl font-extrabold">My Journey</h2>
+        <p>I started tinkering with HTML in school and quickly fell in love with building tiny things that delight people. Over the years I learned to combine accessibility and performance into products that ship and scale.</p>
+        <p>Outside work I obsess over pixel-perfect interactions, indie game jams, and micro-animations.</p>
+      </div>
+    </section>
+
+    <!-- Skills + Mini-quiz (gamified element) -->
+    <section id="skills" class="max-w-6xl mx-auto px-6 py-20">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-2">
+          <h3 class="text-2xl font-extrabold mb-4">Skills & Stats</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">Interactive skill map — try the quick quiz to test what fits you best.</p>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-5 rounded-lg bg-white dark:bg-slate-800 card-depth">
+              <h4 class="font-semibold">Frontend</h4>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">React, Tailwind, accessibility-first design</p>
+            </div>
+            <div class="p-5 rounded-lg bg-white dark:bg-slate-800 card-depth">
+              <h4 class="font-semibold">Data Sync</h4>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">PouchDB, CouchDB, offline-first patterns</p>
+            </div>
+            <div class="p-5 rounded-lg bg-white dark:bg-slate-800 card-depth">
+              <h4 class="font-semibold">Performance</h4>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Critical rendering path, image optimization</p>
+            </div>
+            <div class="p-5 rounded-lg bg-white dark:bg-slate-800 card-depth">
+              <h4 class="font-semibold">Design Systems</h4>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Tokens, accessible components</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini quiz card -->
+        <aside class="p-6 rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 text-white card-depth" aria-labelledby="quizTitle">
+          <h4 id="quizTitle" class="font-extrabold text-xl">Quick Skill Quiz</h4>
+          <p class="text-sm opacity-90 mb-4">Answer 3 quick questions — get a playful result.</p>
+
+          <form id="quizForm" class="space-y-3" aria-live="polite">
+            <label class="text-sm">1) Prefer building UIs or infra?</label>
+            <select required name="q1" class="w-full rounded p-2 text-slate-900">
+              <option value="ui">UI</option>
+              <option value="infra">Infra</option>
+            </select>
+
+            <label class="text-sm">2) Favorite language?</label>
+            <select required name="q2" class="w-full rounded p-2 text-slate-900">
+              <option value="js">JavaScript</option>
+              <option value="py">Python</option>
+            </select>
+
+            <label class="text-sm">3) UX or Perf?</label>
+            <select required name="q3" class="w-full rounded p-2 text-slate-900">
+              <option value="ux">UX</option>
+              <option value="perf">Performance</option>
+            </select>
+
+            <div class="flex gap-2">
+              <button type="submit" class="px-4 py-2 rounded bg-white text-violet-700 font-semibold">See result</button>
+              <button type="button" id="quizReset" class="px-4 py-2 rounded bg-white/30">Reset</button>
+            </div>
+
+            <div id="quizResult" class="mt-3 text-sm bg-white/20 p-3 rounded hidden" role="status"></div>
+          </form>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Contact / Chatbot widget -->
+    <section id="contact" class="max-w-6xl mx-auto px-6 py-20">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-2xl font-extrabold">Get in touch</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">I’m available for freelance or full-time roles — or just to chat about ideas. Use the contact form or the chat widget.</p>
+
+          <form id="contactForm" class="space-y-4" aria-label="Contact form">
+            <label class="block">
+              <span class="text-sm">Your name</span>
+              <input name="name" required class="mt-1 block w-full rounded p-3 bg-white dark:bg-slate-800" />
+            </label>
+            <label class="block">
+              <span class="text-sm">Email</span>
+              <input name="email" type="email" required class="mt-1 block w-full rounded p-3 bg-white dark:bg-slate-800" />
+            </label>
+            <label class="block">
+              <span class="text-sm">Message</span>
+              <textarea name="message" rows="4" required class="mt-1 block w-full rounded p-3 bg-white dark:bg-slate-800"></textarea>
+            </label>
+            <button type="submit" class="px-4 py-3 rounded bg-gradient-to-r from-rose-500 to-orange-400 text-white font-semibold">Send message</button>
+          </form>
+        </div>
+
+        <div>
+          <h4 class="text-lg font-bold mb-3">Chat with me</h4>
+          <div id="chatWidget" class="flex flex-col gap-3 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 card-depth" aria-live="polite">
+            <div id="chatLog" class="flex flex-col gap-2 max-h-64 overflow-auto"></div>
+            <form id="chatForm" class="flex gap-2" aria-label="Chat with Heretic">
+              <input id="chatInput" class="flex-1 rounded p-2 bg-white dark:bg-slate-800" placeholder="Say hi — try 'portfolio'" />
+              <button class="px-3 py-2 rounded bg-violet-600 text-white">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 py-8 mt-12">
+      <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">© <strong>Heretic</strong> — Built with ❤️ · Deploy-ready</p>
+        <div class="flex gap-3">
+          <a href="#" class="text-sm">Twitter</a>
+          <a href="#" class="text-sm">GitHub</a>
+          <a href="#" class="text-sm">Dribbble</a>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- Sticky Chatbot floating button -->
+  <button id="chatToggle" aria-expanded="false" aria-controls="chatPanel" class="fixed right-6 bottom-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-lg flex items-center justify-center focus:outline-none focus-visible:ring-2">
+    💬
+  </button>
+
+  <div id="chatPanel" class="fixed right-6 bottom-24 z-50 w-80 rounded-2xl overflow-hidden hidden">
+    <div class="p-3 bg-white dark:bg-slate-800 card-depth">
+      <div id="miniChatLog" class="max-h-48 overflow-auto flex flex-col gap-2"></div>
+      <form id="miniChatForm" class="mt-2 flex gap-2">
+        <input id="miniChatInput" class="flex-1 rounded p-2 bg-slate-100 dark:bg-slate-700" placeholder="Ask a quick question" />
+        <button class="px-3 py-2 rounded bg-violet-600 text-white">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts: Interaction logic, animations, accessibility helpers -->
+  <script>
+    // ---------- Utility: Respect reduced motion ----------
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---------- Simple mobile drawer toggles ----------
+    document.getElementById('mobileMenuBtn').addEventListener('click', ()=>{
+      document.getElementById('mobileDrawer').classList.remove('hidden');
+    });
+    document.querySelectorAll('[data-drawer-close]').forEach(el=>el.addEventListener('click', ()=>{
+      document.getElementById('mobileDrawer').classList.add('hidden');
+    }));
+
+    // ---------- Animated Dark Mode Toggle (not just color swap) ----------
+    const themeToggle = document.getElementById('themeToggle');
+    const knob = document.getElementById('toggleKnob');
+    const body = document.documentElement;
+    const setTheme = (t)=>{
+      if(t==='dark'){
+        body.classList.add('dark');
+        knob.style.transform = 'translateX(28px)';
+        themeToggle.setAttribute('aria-pressed','true');
+        document.body.dataset.theme='dark';
+      } else {
+        body.classList.remove('dark');
+        knob.style.transform = 'translateX(0)';
+        themeToggle.setAttribute('aria-pressed','false');
+        document.body.dataset.theme='light';
+      }
+    }
+    // load preference or system
+    const stored = localStorage.getItem('site-theme');
+    if(stored) setTheme(stored); else setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+    themeToggle.addEventListener('click', ()=>{
+      const now = document.body.classList.contains('dark') ? 'light' : 'dark';
+      setTheme(now);
+      localStorage.setItem('site-theme', now);
+    });
+
+    // ---------- Scroll-triggered animations via IntersectionObserver ----------
+    const animEls = document.querySelectorAll('[data-animate]');
+    if(animEls.length && !reducedMotion){
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            const el = e.target;
+            const delay = el.dataset.delay ? Number(el.dataset.delay) : 0;
+            setTimeout(()=>{
+              el.style.transition = 'opacity 600ms cubic-bezier(.2,.9,.3,1), transform 600ms cubic-bezier(.2,.9,.3,1)';
+              el.style.opacity = 1;
+              el.style.transform = 'translateY(0)';
+            }, delay);
+            io.unobserve(el);
+          }
+        });
+      },{threshold:0.12});
+      animEls.forEach(el=>{ el.style.opacity=0; el.style.transform='translateY(12px)'; io.observe(el); });
+    }
+
+    // ---------- Parallax micro-interactions for hero layers ----------
+    const parallaxEls = document.querySelectorAll('[data-parallax]');
+    window.addEventListener('mousemove', (e)=>{
+      parallaxEls.forEach(el=>{
+        const amount = Number(el.dataset.parallax) || 6;
+        const x = (e.clientX - window.innerWidth/2) / window.innerWidth * amount;
+        const y = (e.clientY - window.innerHeight/2) / window.innerHeight * amount;
+        el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.02)`;
+      });
+    });
+
+    // ---------- Projects: open case modal ----------
+    const cases = {
+      'Retail Sync Dashboard':{
+        title: 'Retail Sync Dashboard',
+        problem: 'Managing inventory across two physical shops with inconsistent sync and no offline support.',
+        solution: 'Built an offline-first PWA using React + PouchDB with conflict resolution and sync strategies.',
+        stack: ['React','PouchDB','IndexedDB','Tailwind'],
+        challenges: ['Offline syncing edge-cases','Large image optimization','Conflict resolution UX'],
+        outcomes: ['Reduced stock-check time by 60%','0 data loss in 6 months']
+      },
+      'Design System Kit':{
+        title: 'Design System Kit',
+        problem: 'Inconsistent UI across product teams.',
+        solution: 'Created an accessible tokens-based design system and component library.',
+        stack: ['Figma','Tokens','Storybook'],
+        challenges: ['Cross-team adoption','Color contrast adjustments'],
+        outcomes: ['Faster prototyping','Improved a11y compliance']
+      },
+      'Interactive Code Playground':{
+        title: 'Interactive Code Playground',
+        problem: 'Slow feedback loop for small front-end experiments.',
+        solution: 'Tiny sandbox with instant preview and shareable URL; fast refresh through Vite.',
+        stack: ['VanillaJS','Vite'],
+        challenges: ['Sandboxing eval','Security'],
+        outcomes: ['More demos shipped','Lowered onboarding time']
+      }
+    };
+
+    document.querySelectorAll('.open-case').forEach(btn=>btn.addEventListener('click', (e)=>{
+      const title = e.target.closest('.project-card').querySelector('h3').innerText.trim();
+      const data = cases[title];
+      const modal = document.getElementById('caseModal');
+      const content = document.getElementById('caseContent');
+      content.innerHTML = `
+        <header class=\"mb-4\"> <h3 class=\"text-2xl font-bold\">${data.title}</h3> <p class=\"text-sm text-slate-600 dark:text-slate-300\">${data.problem}</p></header>
+        <section class=\"grid md:grid-cols-2 gap-4\"> 
+          <div>
+            <h4 class=\"font-semibold\">Solution</h4>
+            <p class=\"text-sm text-slate-600 dark:text-slate-300\">${data.solution}</p>
+            <h4 class=\"mt-4 font-semibold\">Stack</h4>
+            <div class=\"flex gap-2 mt-2\">${data.stack.map(s=>`<span class=\\"text-xs px-2 py-1 rounded bg-slate-100 dark:bg-slate-800\\">${s}</span>`).join('')}</div>
+          </div>
+          <div>
+            <h4 class=\"font-semibold\">Challenges</h4>
+            <ul class=\"list-disc ml-5 text-sm text-slate-600 dark:text-slate-300\">${data.challenges.map(c=>`<li>${c}</li>`).join('')}</ul>
+            <h4 class=\"mt-4 font-semibold\">Outcomes</h4>
+            <ul class=\"list-disc ml-5 text-sm text-slate-600 dark:text-slate-300\">${data.outcomes.map(o=>`<li>${o}</li>`).join('')}</ul>
+          </div>
+        </section>
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }));
+
+    document.querySelectorAll('[data-close-modal]').forEach(el=>el.addEventListener('click', ()=>{
+      document.getElementById('caseModal').classList.add('hidden');
+      document.getElementById('caseModal').classList.remove('flex');
+    }));
+
+    // allow escape to close
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') { document.getElementById('caseModal').classList.add('hidden'); document.getElementById('caseModal').classList.remove('flex'); }});
+
+    // ---------- Filter projects ----------
+    document.getElementById('projectFilter').addEventListener('change',(e)=>{
+      const v = e.target.value;
+      document.querySelectorAll('#projectGrid .project-card').forEach(card=>{
+        card.style.display = (v==='all' || card.dataset.type===v) ? '' : 'none';
+      });
+    });
+
+    // ---------- Mini quiz logic ----------
+    document.getElementById('quizForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const q1 = f.get('q1'), q2=f.get('q2'), q3=f.get('q3');
+      let persona = 'Explorer';
+      if(q1==='ui' && q3==='ux') persona='Product UI Builder';
+      if(q1==='infra' && q3==='perf') persona='Platform Engineer';
+      if(q2==='py') persona += ' (also likes Python)';
+      const r = document.getElementById('quizResult');
+      r.innerText = `You are: ${persona} — a great fit for projects that need strong UX and pragmatic engineering.`;
+      r.classList.remove('hidden');
+    });
+    document.getElementById('quizReset').addEventListener('click', ()=>{ document.getElementById('quizResult').classList.add('hidden'); document.getElementById('quizForm').reset(); });
+
+    // ---------- Simple chat widget (mocked) ----------
+    function appendChat(elId, text, who='bot'){
+      const c = document.createElement('div');
+      c.className = who==='bot' ? 'text-sm bg-slate-100 dark:bg-slate-700 p-2 rounded self-start max-w-[88%]' : 'text-sm bg-violet-600 text-white p-2 rounded self-end max-w-[88%]';
+      c.innerText = text;
+      document.getElementById(elId).appendChild(c);
+      const container = document.getElementById(elId);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    document.getElementById('chatForm').addEventListener('submit',(e)=>{
+      e.preventDefault(); const v=document.getElementById('chatInput'); if(!v.value) return; appendChat('chatLog', v.value, 'me');
+      // simulated bot response
+      setTimeout(()=>{ appendChat('chatLog', `Nice! I saw: "${v.value.substring(0,80)}" — you can view projects below.`); }, 700);
+      v.value='';
+    });
+
+    // floating mini-chat
+    const chatToggle = document.getElementById('chatToggle');
+    chatToggle.addEventListener('click', ()=>{
+      const panel = document.getElementById('chatPanel');
+      const open = panel.classList.toggle('hidden');
+      chatToggle.setAttribute('aria-expanded', String(!open));
+    });
+    document.getElementById('miniChatForm').addEventListener('submit', (e)=>{
+      e.preventDefault(); const val = document.getElementById('miniChatInput').value; if(!val) return; appendChat('miniChatLog', val, 'me'); setTimeout(()=>appendChat('miniChatLog', 'Thanks — I will reply soon!'), 600); document.getElementById('miniChatInput').value='';
+    });
+
+    // ---------- Contact form (mock submit) ----------
+    document.getElementById('contactForm').addEventListener('submit', (e)=>{ e.preventDefault(); alert('Thanks! Message sent (mock). Replace with real endpoint or service).'); e.target.reset(); });
+
+    // ---------- Accessibility: keyboard focus management for modal ----------
+    document.getElementById('caseModal').addEventListener('keydown', (e)=>{
+      if(e.key === 'Tab'){
+        const focusable = Array.from(document.getElementById('caseModal').querySelectorAll('a,button,input,select,textarea')).filter(i=>!i.disabled);
+        if(!focusable.length) return;
+        const idx = focusable.indexOf(document.activeElement);
+        if(e.shiftKey && idx===0){ focusable[focusable.length-1].focus(); e.preventDefault(); }
+        if(!e.shiftKey && idx===focusable.length-1){ focusable[0].focus(); e.preventDefault(); }
+      }
+    });
+
+    // ---------- Micro-animations for buttons (press) ----------
+    document.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('pointerdown', ()=>{ b.style.transform='scale(0.995)'; });
+      b.addEventListener('pointerup', ()=>{ b.style.transform='scale(1)'; });
+    });
+
+    // ---------- Performance notes and progressive enhancement ----------
+    // - Replace big Lottie with optimized one or use <img> fallback when needed.
+    // - For production: build Tailwind and purge unused classes; serve images as AVIF/WebP.
+  </script>
+
+</body>
+</html>
